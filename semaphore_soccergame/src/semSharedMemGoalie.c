@@ -329,11 +329,11 @@ static void playUntilEnd (int id, int team)
     
     if (team == 1) {
        
-      sh->fSt.goalieStat[id] == PLAYING_1;   
+      sh->fSt.st.goalieStat[id] == PLAYING_1;   
 
     }  else {
 
-      sh->fSt.goalieStat[id] == PLAYING_2;
+      sh->fSt.st.goalieStat[id] == PLAYING_2;
    
     }
     
@@ -348,8 +348,8 @@ static void playUntilEnd (int id, int team)
     /* TODO: insert your code here */
     
     if (semDown(semgid, sh->playersWaitEnd) == -1) {
-      perror("error on the down operation for semaphore access (GL)")
-      exit(EXIT_FAILURE);  
+      perror("error on the down operation for semaphore access (GL)");
+      exit(EXIT_FAILURE); 
     }
 }
 
