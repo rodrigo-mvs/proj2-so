@@ -220,6 +220,14 @@ static void startGame ()
         }
     }
 
+     for (int i = 0; i < NUMPLAYERS; i++) {
+        if (semDown(semgid, sh->playing) == -1)
+        { 
+            perror("error on the down operation for semaphore access (RF)");
+            exit(EXIT_FAILURE);
+        }
+    }
+
 }
 
 /**

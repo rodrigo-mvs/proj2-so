@@ -110,7 +110,7 @@ int main (int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    /* initialize random generator */
+    /* initialize random generator */ 
     srandom ((unsigned int) getpid ());                                                 
 
 
@@ -172,126 +172,87 @@ static void arrive(int id)
  *  \return id of player team (0 for late goalies; 1 for team 1; 2 for team 2)
  *
  */
-static int playerConstituteTeam (int id)
+static int playerConstituteTeam(int id)
 {
-    int ret = 0;
+    int ret = 0; // Default value for late players
 
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("error on the down operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 
-
-    /* TODO: insert your code here */
+    // Update arrival and free players count
     sh->fSt.playersArrived++;
     sh->fSt.playersFree++;
 
-    if (sh->fSt.goaliesFree >= 1 && sh->fSt.playersFree >= 3) {
-        
-      // caso o jogador seja o formador da equipa 
+    if (sh->fSt.playersArrived > NUMPLAYERS) {
+        // Late players
+        sh->fSt.st.playerStat[id] = LATE;
+        saveState(nFic, &sh->fSt);
+        sh->fSt.playersFree--;
+    } else if (sh->fSt.playersFree >= NUMTEAMPLAYERS && sh->fSt.goaliesFree >= 1) {
+        // Form a team
+        sh->fSt.playersFree -= NUMTEAMPLAYERS;
+        sh->fSt.goaliesFree--;
 
-      sh->fSt.playersFree -= NUMTEAMPLAYERS;
-      sh->fSt.goaliesFree -= NUMTEAMGOALIES;
-      
-      sh->fSt.st.playerStat[id]=FORMING_TEAM;
-      saveState(nFic,&sh->fSt);
-      
-      // semUp para os restantes jogadores (exclui-se o formador da equipa)
+        sh->fSt.st.playerStat[id] = FORMING_TEAM;
+        saveState(nFic, &sh->fSt);
 
-      for (int i = 0; i < NUMTEAMPLAYERS-1; i++ ){
-        
-        if (semUp(semgid, sh->playersWaitTeam) == -1) {
-          
-          perror("error on the up operation for semaphore access (PL)");
-          exit(EXIT_FAILURE);
-
+        for (int i = 0; i < NUMTEAMPLAYERS - 1; i++) {
+            if (semUp(semgid, sh->playersWaitTeam) == -1) {
+                perror("error on the up operation for semaphore access (GL)");
+                exit(EXIT_FAILURE);
+            }
         }
 
+        if (semUp(semgid, sh->goaliesWaitTeam) == -1) {
+            perror("error on the up operation for semaphore access (GL)");
+            exit(EXIT_FAILURE);
+        }
 
-      }
+        for (int i = 0; i < NUMTEAMPLAYERS; i++) {
+            if (semDown(semgid, sh->playerRegistered) == -1) {
+                perror("error on the down operation for semaphore access (GL)");
+                exit(EXIT_FAILURE);
+            }
+        }
 
-      // semUp para o guarda-redes se juntar
-
-      if (semUp(semgid, sh->goaliesWaitTeam) == -1) {
-        
-        perror("error on the up operation for semaphore access (PL)");
-        exit(EXIT_FAILURE);
-        
-      }
-
-
-      // semDown para registar os jogadores na equipa (exclui-se o formador da equipa)
-
-      for (int i = 0; i < 4; i++) {
-        
-        if (semDown(semgid,sh->playerRegistered) == -1) {
-          
-          perror("error on the down operation for semaphore access (PL)");
-          exit(EXIT_FAILURE);
-          
-        } 
-        
-      }
-      
-      ret = sh->fSt.teamId;
-      
-      if (sh->fSt.teamId == 1) {
+        ret = sh->fSt.teamId;
         sh->fSt.teamId++;
-      }
-  
-    } else if (sh->fSt.playersArrived <= 2*NUMTEAMPLAYERS) {
-        
-        // caso o jogador não seja o formador da equipa
-
-        sh->fSt.st.playerStat[id]=WAITING_TEAM;
-        saveState(nFic,&sh->fSt);
-        
     } else {
-        
-        // caso o jogador chegue tarde
-
-        sh->fSt.st.playerStat[id]=LATE;
-        saveState(nFic,&sh->fSt);
-        sh->fSt.playersFree--;
+        // Players waiting for a team
+        sh->fSt.st.playerStat[id] = WAITING_TEAM;
+        saveState(nFic, &sh->fSt);
     }
 
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-    
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("error on the up operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-    
-
-    
+    // Handle team waiting logic
     if (sh->fSt.st.playerStat[id] == WAITING_TEAM) {
-      
-      if (semDown(semgid, sh->playersWaitTeam) == -1) {
-        
-        perror("error on the down operation for semaphore access (PL)");
-        exit(EXIT_FAILURE);
-        
-      }
-      
+        if (semDown(semgid, sh->playersWaitTeam) == -1) {
+            perror("error on the down operation for semaphore access (GL)");
+            exit(EXIT_FAILURE);
+        }
+        if (semUp(semgid, sh->playerRegistered) == -1) {
+            perror("error on the up operation for semaphore access (GL)");
+            exit(EXIT_FAILURE);
+        }
+        ret = sh->fSt.teamId;
     }
 
-    ret=sh->fSt.teamId;
-    
     if (sh->fSt.st.playerStat[id] == FORMING_TEAM) {
-      
-      if (semDown(semgid, sh->refereeWaitTeams) == -1) {
-        
-        perror("error on the down operation for semaphore access (PL)");
-        exit(EXIT_FAILURE);
-        
-      }
-      
+        if (semUp(semgid, sh->refereeWaitTeams) == -1) {
+            perror("error on the up operation for semaphore access (GL)");
+            exit(EXIT_FAILURE);
+        }
     }
 
     return ret;
 }
+
 
 /**
  *  \brief player waits for referee to start match
@@ -302,43 +263,33 @@ static int playerConstituteTeam (int id)
  *  \param id   player id
  *  \param team player team
  */
-static void waitReferee (int id, int team)
+static void waitReferee(int id, int team)
 {
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-    
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("error on the down operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-
+    // Update state based on team
     if (team == 1) {
-
-        sh->fSt.st.goalieStat[id]=WAITING_START_1;
-    
+        sh->fSt.st.playerStat[id] = WAITING_START_1;
     } else {
-    
-        sh->fSt.st.goalieStat[id]=WAITING_START_2;
-    
+        sh->fSt.st.playerStat[id] = WAITING_START_2;
+    }
+    saveState(nFic, &sh->fSt);
+
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("error on the up operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    if (semUp (semgid, sh->mutex) == -1) {        /* exit critical region */
-
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-    
-    }
-
-    /* TODO: insert your code here */
-
-    if (semDown(semgid,sh->playersWaitReferee) == 1) {
-
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-
+    // Wait for the referee to start the match
+    if (semDown(semgid, sh->playersWaitReferee) == -1) {
+        perror("error on the down operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 }
+
 
 /**
  *  \brief player waits for referee to end match
@@ -349,43 +300,33 @@ static void waitReferee (int id, int team)
  *  \param id   player id
  *  \param team player team
  */
-static void playUntilEnd (int id, int team)
+static void playUntilEnd(int id, int team)
 {
-    if (semDown (semgid, sh->mutex) == -1)  {                                                     /* enter critical region */
-        
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-    
+    if (semDown(semgid, sh->mutex) == -1) {
+        perror("error on the down operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    /* TODO: insert your code here */
-    if (team == 1){
-
+    // Update state to playing
+    if (team == 1) {
         sh->fSt.st.playerStat[id] = PLAYING_1;
-
     } else {
-
         sh->fSt.st.playerStat[id] = PLAYING_2;
+    }
+    saveState(nFic, &sh->fSt);
 
+    if (semUp(semgid, sh->mutex) == -1) {
+        perror("error on the up operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
 
-    if (semUp (semgid, sh->mutex) == -1) {                                                         /* exit critical region */
-        
-        perror ("error on the down operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-    
+    // Wait for the referee to end the match
+    if (semDown(semgid, sh->playersWaitEnd) == -1) {
+        perror("error on the down operation for semaphore access (GL)");
+        exit(EXIT_FAILURE);
     }
-
-    /* TODO: insert your code here */
-
-    if (semDown (semgid, sh->playersWaitEnd) == -1) {    
-
-        perror ("error on the up operation for semaphore access (PL)");
-        exit (EXIT_FAILURE);
-    
-    }
-
 }
+
 
 
 
