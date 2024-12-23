@@ -177,7 +177,7 @@ static void arrive(int id)
  *
  *  \param id player id
  *
- *  \return id of player team (0 for late goalies; 1 for team 1; 2 for team 2)
+ *  \return id of player team (0 for late players; 1 for team 1; 2 for team 2)
  *
  */
 static int playerConstituteTeam(int id)
@@ -204,7 +204,7 @@ static int playerConstituteTeam(int id)
             perror("error on the up operation for semaphore access (PL)");
             exit(EXIT_FAILURE);
         }
-        return 0;
+        return 0; // Return early for late players
     }
 
     if (sh->fSt.goaliesFree >= NUMTEAMGOALIES && sh->fSt.playersFree >= NUMTEAMPLAYERS)
@@ -380,5 +380,9 @@ static void playUntilEnd(int id, int team)
         exit(EXIT_FAILURE);
     }
 
-
+    if (semDown(semgid, sh->playing) == -1)
+    { /* enter critical region */
+        perror("error on the up operation for semaphore access (PL)");
+        exit(EXIT_FAILURE);
+    }
 }
