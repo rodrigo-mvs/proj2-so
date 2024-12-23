@@ -269,12 +269,7 @@ static void waitReferee (int id, int team)
     }
 
     /* TODO: insert your code here */
-    if (semUp(semgid, sh->playersWaitReferee) == 1) {
-     
-       perror("error on the up operation for semaphore access (GL)");
-       exit(EXIT_FAILURE);
 
-    }
     if (team == 1) {
       
       sh->fSt.st.goalieStat[id] = WAITING_START_1;
