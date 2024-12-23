@@ -349,5 +349,10 @@ static void playUntilEnd (int id, int team)
       exit(EXIT_FAILURE); 
     
     }
+
+    if (semDown (semgid, sh->playing) == -1)  {                                                     /* enter critical region */
+        perror ("error on the down operation for semaphore access (GL)");
+        exit (EXIT_FAILURE);
+    }
 }
 
