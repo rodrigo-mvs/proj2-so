@@ -162,7 +162,7 @@ static void arrive(int id)
         exit(EXIT_FAILURE);
     }
 
-    usleep((200.0 * random()) / (RAND_MAX + 1.0) + 60.0);
+    usleep((200.0 * random()) / (RAND_MAX + 1.0) + 50.0);
 }
 
 /**
@@ -312,7 +312,7 @@ static void waitReferee(int id, int team)
 
     if (semUp(semgid, sh->playing) == -1)
     { /* enter critical region */
-        perror("error on the down operation for semaphore access (PL)");
+        perror("error on the up operation for semaphore access (PL)");
         exit(EXIT_FAILURE);
     }
 }
@@ -355,12 +355,6 @@ static void playUntilEnd(int id, int team)
     /* TODO: insert your code here */
 
     if (semDown(semgid, sh->playersWaitEnd) == -1)
-    { /* enter critical region */
-        perror("error on the down operation for semaphore access (PL)");
-        exit(EXIT_FAILURE);
-    }
-
-    if (semDown(semgid, sh->playing) == -1)
     { /* enter critical region */
         perror("error on the down operation for semaphore access (PL)");
         exit(EXIT_FAILURE);

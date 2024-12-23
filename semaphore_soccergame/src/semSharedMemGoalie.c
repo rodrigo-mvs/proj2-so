@@ -269,7 +269,12 @@ static void waitReferee (int id, int team)
     }
 
     /* TODO: insert your code here */
+    if (semUp(semgid, sh->playersWaitReferee) == 1) {
+     
+       perror("error on the up operation for semaphore access (GL)");
+       exit(EXIT_FAILURE);
 
+    }
     if (team == 1) {
       
       sh->fSt.st.goalieStat[id] = WAITING_START_1;
@@ -297,6 +302,12 @@ static void waitReferee (int id, int team)
        perror("error on the down operation for semaphore access (GL)");
        exit(EXIT_FAILURE);
 
+    }
+
+    if (semUp(semgid, sh->playing) == -1)
+    { /* enter critical region */
+        perror("error on the down operation for semaphore access (PL)");
+        exit(EXIT_FAILURE);
     }
 
 }
@@ -350,9 +361,5 @@ static void playUntilEnd (int id, int team)
     
     }
 
-    if (semDown (semgid, sh->playing) == -1)  {                                                     /* enter critical region */
-        perror ("error on the down operation for semaphore access (GL)");
-        exit (EXIT_FAILURE);
-    }
 }
 
