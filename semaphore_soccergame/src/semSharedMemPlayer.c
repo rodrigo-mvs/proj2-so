@@ -177,7 +177,7 @@ static void arrive(int id)
  *
  *  \param id player id
  *
- *  \return id of player team (0 for late goalies; 1 for team 1; 2 for team 2)
+ *  \return id of player team (0 for late players; 1 for team 1; 2 for team 2)
  *
  */
 static int playerConstituteTeam(int id)
@@ -189,11 +189,12 @@ static int playerConstituteTeam(int id)
         perror("error on the down operation for semaphore access (PL)");
         exit(EXIT_FAILURE);
     }
+
     sh->fSt.playersArrived++;
-    
+    // printf("%d",sh->fSt.playersArrived);
     if (sh->fSt.goaliesFree >= NUMTEAMGOALIES && sh->fSt.playersFree >= NUMTEAMPLAYERS)
     {
-        sh->fSt.playersFree -= NUMTEAMPLAYERS;
+        sh->fSt.playersFree -= (NUMTEAMPLAYERS-1);
         sh->fSt.goaliesFree -= NUMTEAMGOALIES;
         sh->fSt.st.playerStat[id] = FORMING_TEAM;
         saveState(nFic, &sh->fSt);
@@ -205,6 +206,8 @@ static int playerConstituteTeam(int id)
                 perror("error on the up operation for semaphore access (PL)");
                 exit(EXIT_FAILURE);
             }
+
+
         }
 
         if (semUp(semgid, sh->goaliesWaitTeam) == -1)
@@ -220,6 +223,7 @@ static int playerConstituteTeam(int id)
                 perror("error on the down operation for semaphore access (PL)");
                 exit(EXIT_FAILURE);
             }
+            
         }
         ret = sh->fSt.teamId;
         if (sh->fSt.teamId == 1)
@@ -238,10 +242,10 @@ static int playerConstituteTeam(int id)
     {
         sh->fSt.st.playerStat[id] = LATE;
         saveState(nFic, &sh->fSt);
-        
+
         if (semUp(semgid, sh->mutex) == -1)
-        { /* enter critical region */
-            perror("error on the down operation for semaphore access (PL)");
+        { /* exit critical region */
+            perror("error on the up operation for semaphore access (PL)");
             exit(EXIT_FAILURE);
         }
         return 0;
@@ -277,7 +281,9 @@ static int playerConstituteTeam(int id)
             perror("error on the up operation for semaphore access (PL)");
             exit(EXIT_FAILURE);
         }
+        ret = sh->fSt.teamId;
     }
+    
     return ret;
 }
 
@@ -367,7 +373,7 @@ static void playUntilEnd(int id, int team)
     /* TODO: insert your code here */
 
     if (semDown(semgid, sh->playersWaitEnd) == -1)
-    { /* enter critical region */
+    { 
         perror("error on the down operation for semaphore access (PL)");
         exit(EXIT_FAILURE);
     }

@@ -212,7 +212,7 @@ static void startGame ()
     }
 
     /* TODO: insert your code here */
-    for (int i = 0; i < NUMPLAYERS; i++) {
+    for (int i = 0; i < 2*(NUMTEAMPLAYERS + NUMTEAMGOALIES); i++) {
         if (semUp(semgid, sh->playersWaitReferee) == -1)
         { 
             perror("error on the up operation for semaphore access (RF)");
@@ -220,7 +220,7 @@ static void startGame ()
         }
     }
 
-     for (int i = 0; i < NUMPLAYERS; i++) {
+     for (int i = 0; i < 2*(NUMTEAMPLAYERS + NUMTEAMGOALIES); i++) {
         if (semDown(semgid, sh->playing) == -1)
         { 
             perror("error on the down operation for semaphore access (RF)");

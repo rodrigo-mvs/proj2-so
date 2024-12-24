@@ -217,6 +217,13 @@ static int goalieConstituteTeam(int id)
         sh->fSt.st.goalieStat[id] = LATE;
         saveState(nFic, &sh->fSt);
         sh->fSt.goaliesFree--;
+        
+        if (semUp(semgid, sh->mutex) == -1)
+        { /* exit critical region */
+            perror("error on the up operation for semaphore access (PL)");
+            exit(EXIT_FAILURE);
+        }
+        return 0;
     }
 
     if (semUp(semgid, sh->mutex) == -1) {
