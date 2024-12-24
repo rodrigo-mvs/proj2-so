@@ -191,10 +191,11 @@ static int playerConstituteTeam(int id)
     }
 
     sh->fSt.playersArrived++;
+    sh->fSt.playersFree++;
     // printf("%d",sh->fSt.playersArrived);
     if (sh->fSt.goaliesFree >= NUMTEAMGOALIES && sh->fSt.playersFree >= NUMTEAMPLAYERS)
     {
-        sh->fSt.playersFree -= (NUMTEAMPLAYERS-1);
+        sh->fSt.playersFree -= NUMTEAMPLAYERS;
         sh->fSt.goaliesFree -= NUMTEAMGOALIES;
         sh->fSt.st.playerStat[id] = FORMING_TEAM;
         saveState(nFic, &sh->fSt);
@@ -206,7 +207,6 @@ static int playerConstituteTeam(int id)
                 perror("error on the up operation for semaphore access (PL)");
                 exit(EXIT_FAILURE);
             }
-
 
         }
 
@@ -234,7 +234,7 @@ static int playerConstituteTeam(int id)
     }
     else if (sh->fSt.playersArrived <= 2*NUMTEAMPLAYERS)
     {
-        sh->fSt.playersFree++;
+       
         sh->fSt.st.playerStat[id] = WAITING_TEAM;
         saveState(nFic, &sh->fSt);
     }
@@ -242,7 +242,8 @@ static int playerConstituteTeam(int id)
     {
         sh->fSt.st.playerStat[id] = LATE;
         saveState(nFic, &sh->fSt);
-
+        sh->fSt.playersFree--;
+        
         if (semUp(semgid, sh->mutex) == -1)
         { /* exit critical region */
             perror("error on the up operation for semaphore access (PL)");

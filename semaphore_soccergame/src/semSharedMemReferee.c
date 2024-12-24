@@ -179,7 +179,7 @@ static void waitForTeams ()
     }
 
     /* TODO: insert your code here */
-        for (int i = 1; i < NUMTEAMGOALIES-1; i++) {
+        for (int i = 1; i <= NUMTEAMGOALIES; i++) {
         if (semDown (semgid, sh->refereeWaitTeams) == -1) {                                                 
             perror ("error on the up operation for semaphore access (RF)");
             exit (EXIT_FAILURE);
